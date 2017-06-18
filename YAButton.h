@@ -38,30 +38,36 @@ Features:
   is being held)
 
 Usage:
-First decide how often you want the button routine to run. Try 10ms or 15ms. You
-probably want 2 or 3 polling periods to ensure you don't catch any bounce.
-Typical bounce time is 10ms to 50ms, depending on the button. In the example I
-assume about 30ms of debounce is required, so I set my polling period to 15ms
-and the debounce to 30ms/15ms = 2 polling periods. Keep in mind that if your
-debounce time is set to longer than 50ms, you may find the buttons occasionally
-miss consecutive presses. You may have to experiment a bit.
+First decide how often you want the button routine to run. This is your polling
+period (pollPeriod). Generally you want to poll the button fairly often so you
+detect the button press as quickly as possible. Try 10ms or 15ms.
 
-Next decide that you are going to do when the button is pressed, released and
+Second you want to decide on a debounce period. Typical bounce time for a
+button is 10ms to 50ms, depending on the button. In the example I assume 30ms
+of debounce is required. Keep in mind that if your debounce time is set to
+longer than 50ms, you may find the buttons occasionally miss consecutive
+presses (because it is still debouncing the previous press). You may have to
+experiment a bit.
+NOTE: The debounce period needs to be a multiple of the poll period (the button
+routine only runs on the polling period).
+
+Third decide what you are going to do when the button is pressed, released and
 long pressed. This is done with callback functions. You register a callback
-function with the set methods. When that action occurs, the function will be
+function with the "set" methods. When that action occurs, the function will be
 called, to do whatever you want. The long press can either repeat the call
-or only call once. You only need to provide callback functions for the actions
-you want to handle.
+or only call once.
+NOTE: You only need to provide callback functions for the actions you want to
+handle.
 
-* For no long press call -- don't provide a callback
 * For long press calls -- provide a callback, and provide a delay to wait (in
-   poll periods). If the pollTime is 0 then the long press callback will be
-   called right after the (short) button press.
-   all).
-* For continuous long press calls -- provide a callback, a pollTime and a
-   repeatPollTime. With the repeatPollTime you can decide how often you want
+   milliseconds). If the longPressDelay is 0 then the long press callback will
+   be called right after the (short) button press.
+* For continuous long press calls -- provide a callback, a longPressDelay and a
+   repeatDelay. With the repeatDelay you can decide how often you want
    the long press function to be called. This is handy for things like setting
    the clock time or scrolling quickly though a list of options.
+   NOTE: longPressDelay and repeatDelay should be multiples of the polling
+   period.
 
 
 See ButtonExample.ino for an example of how the button library should be used.
@@ -95,13 +101,16 @@ public:
     * Instantiate a button
     * 
     * @param pin - the digital pin number
-    * @param debounceTime - the number of poll periods before the button is
+    * @param pollPeriod - the number of milliseconds between each call of the
+    *    run() method (how often you are going to check the button).
+    * @param debounceDelay - the number of milliseconds before the button is
     *    done bouncing.
+    *    NOTE: This should be a multiple of the pollPeriod or 0 for no debounce.
     * @param activeState - (optional) the active state of the button. Default
     *    is active LOW (when the pin is 0V then the button is "pressed"). The
     *    default is low so you can use the internal pull-up resistor on the pin.
     */
-   YAButton(uint8_t pin, uint8_t debounceTime, bool activeState=LOW);
+   YAButton(uint8_t pin, uint16_t pollPeriod, uint16_t debounceDelay, bool activeState=LOW);
    
    /**
     * Set the callback function for when the button is pressed (optional).
@@ -117,13 +126,18 @@ public:
     * @param callbackFunction - the function that will be called when the button
     *    is long pressed. The function should take no parameters and return
     *    nothing.
-    * @param pollTime - the number of polling periods to wait after the initial
-    *    button press before the callback function is called.
-    * @param repeatPollTime - (optional) the number of polling periods before
+    * @param longPressDelay - the number of milliseconds to wait after the
+    *    initial button press before the long press callback function is
+    *    called. If you want the long press callback to run immediately when
+    *    the button is pressed, set the longPressDelay value to 0.
+    *    NOTE: This should be a multiple of pollPeriod (or 0).
+    * @param repeatDelay - (optional) the number of milliseconds before
     *    repeated calls of the callback function. To only call the function 1
-    *    time, leave this parameter as 0.
+    *    time, leave this parameter as 0. If you want the function to be called
+    *    repeatedly as fast as possible, set the parameter to the pollPeriod.
+    *    NOTE: The repeatDelay should be a multiple of pollPeriod (or 0).
     */
-   void setLongPressCallback(buttonFunction callbackFunction, uint8_t pollTime, uint8_t repeatPollTime=0);
+   void setLongPressCallback(buttonFunction callbackFunction, uint16_t longPressDelay, uint16_t repeatDelay=0);
    
    /**
     * Set the callback function for when the button released (optional).
@@ -134,8 +148,9 @@ public:
    void setReleaseCallback(buttonFunction callbackFunction);
    
    /**
-    * The run method. Call this method every poll period.
-    * NOTE: The poll period must be provided outside this library to ensure that
+    * The run method. Set up your program to call this method once per polling
+    * period.
+    * NOTE: The poll period must be set up outside this library to ensure that
     * the run() method is called on a consistent basis.
     */
    void run();
@@ -143,14 +158,15 @@ public:
 private:
    uint8_t pinNumber;
    bool activeState;
-   uint8_t debounceTime;
+   uint16_t pollTimeMs;
+   uint16_t debounceTime;
    buttonFunction buttonPressCallbackFunc;
    buttonFunction buttonLongPressCallbackFunc;
-   uint8_t longPressPollTime;
-   uint8_t longPressRepeatTime;
+   uint16_t longPressPollTime;
+   uint16_t longPressRepeatTime;
    buttonFunction buttonReleaseCallbackFunc;
-   uint8_t counter;
-   uint8_t timeout;
+   uint16_t counter;
+   uint16_t timeout;
    int prevPinState;
    buttonStates_t buttonState;
 };

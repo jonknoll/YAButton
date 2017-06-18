@@ -29,11 +29,12 @@ SOFTWARE.
 
 
 
-YAButton::YAButton(uint8_t pin, uint8_t debounceTime, bool activeState)
+YAButton::YAButton(uint8_t pin, uint16_t pollPeriod, uint16_t debounceDelay, bool activeState)
 {
    pinNumber = pin;
    YAButton::activeState = activeState;
-   YAButton::debounceTime = debounceTime;
+   pollTimeMs = pollPeriod;
+   debounceTime = (uint16_t)(debounceDelay / pollTimeMs);
    buttonPressCallbackFunc = 0;
    buttonLongPressCallbackFunc = 0;
    longPressPollTime = 0;
@@ -59,11 +60,11 @@ void YAButton::setPressCallback(buttonFunction callbackFunction)
    buttonPressCallbackFunc = callbackFunction;
 }
 
-void YAButton::setLongPressCallback(buttonFunction callbackFunction, uint8_t pollTime, uint8_t repeatPollTime)
+void YAButton::setLongPressCallback(buttonFunction callbackFunction, uint16_t longPressDelay, uint16_t repeatDelay)
 {
    buttonLongPressCallbackFunc = callbackFunction;
-   longPressPollTime = pollTime;
-   longPressRepeatTime = repeatPollTime;
+   longPressPollTime = (uint16_t)(longPressDelay / pollTimeMs);
+   longPressRepeatTime = (uint16_t)(repeatDelay / pollTimeMs);
 }
 
 void YAButton::setReleaseCallback(buttonFunction callbackFunction)
@@ -101,7 +102,7 @@ void YAButton::run()
             break;
             
          case BUTTON_DEBOUNCING:
-            if(counter >= timeout)
+            if(counter >= timeout) // done debouncing?
             {
                // set up for next state
                counter = 0;
@@ -117,23 +118,10 @@ void YAButton::run()
             
          case BUTTON_PRESSED:
             pinState = digitalRead(pinNumber);
-            if(pinState != activeState)
+            if(pinState == activeState)
             {
-               // set up for next state
-               counter = 0;
-               timeout = debounceTime;
-               buttonState = BUTTON_RELEASE_DEBOUNCING;
-
-               // call the callback on first detection of the button release
-               if(buttonReleaseCallbackFunc != 0)
-               {
-                  buttonReleaseCallbackFunc();
-               }
-               runAgain = true;
-            }
-            else // still pressed
-            {
-               if(counter >= timeout)
+               // still pressed
+               if(counter >= timeout) // long pressed yet?
                {
                   // set up for next state
                   counter = 0;
@@ -152,11 +140,7 @@ void YAButton::run()
                   counter++;
                }
             }
-            break;
-
-         case BUTTON_LONG_PRESSED:
-            pinState = digitalRead(pinNumber);
-            if(pinState != activeState)
+            else // released
             {
                // set up for next state
                counter = 0;
@@ -170,7 +154,11 @@ void YAButton::run()
                }
                runAgain = true;
             }
-            else // still pressed
+            break;
+
+         case BUTTON_LONG_PRESSED:
+            pinState = digitalRead(pinNumber);
+            if(pinState == activeState)
             {
                if(longPressRepeatTime > 0)
                {
@@ -183,12 +171,27 @@ void YAButton::run()
                      {
                         buttonLongPressCallbackFunc();
                      }
+                     runAgain = true;
                   }
                   else
                   {
                      counter++;
                   }
                }
+            }
+            else // released
+            {
+               // set up for next state
+               counter = 0;
+               timeout = debounceTime;
+               buttonState = BUTTON_RELEASE_DEBOUNCING;
+
+               // call the callback on first detection of the button release
+               if(buttonReleaseCallbackFunc != 0)
+               {
+                  buttonReleaseCallbackFunc();
+               }
+               runAgain = true;
             }
             break;
             

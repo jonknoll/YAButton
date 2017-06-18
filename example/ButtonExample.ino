@@ -1,5 +1,5 @@
 /**
- * Button example. This uses a poll time of 15ms to run a button on pin 9.
+ * Button example. This uses a poll time of 10ms to run a button on pin 9.
  * It flashes the LED on pin 13.
  */
 
@@ -9,11 +9,11 @@
 const int ledPin = 13;
 const int buttonPin = 9;
 
-const int pollTimeInMs = 15;
+const int pollTimeInMs = 10;
 const int debounceTimeMs = 30;
 boolean ledState = LOW;
 
-YAButton button1(buttonPin, debounceTimeMs/pollTimeInMs);
+YAButton button1(buttonPin, pollTimeInMs, debounceTimeMs);
 uint32_t nextRun;
 
 static void ledOn(void);
@@ -28,7 +28,7 @@ void setup()
    button1.setPressCallback(ledOn);
    // Start blinking after button has been pressed for 2 seconds
    // Keep blinking at a rate of 2Hz as long as the button is pressed
-   button1.setLongPressCallback(ledBlink, 2000/pollTimeInMs, 250/pollTimeInMs);
+   button1.setLongPressCallback(ledBlink, 2000, 250);
    button1.setReleaseCallback(ledOff);
 }
 
