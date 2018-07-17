@@ -7,17 +7,17 @@
 #######################################
 
 buttonStates_t	KEYWORD1
-buttonFunction KEYWORD1
-YAButton KEYWORD1
+buttonFunction	KEYWORD1
+YAButton	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
 
-setPressCallback KEYWORD2
-setLongPressCallback KEYWORD2
-setReleaseCallback KEYWORD2
-run KEYWORD2
+setPressCallback	KEYWORD2
+setLongPressCallback	KEYWORD2
+setReleaseCallback	KEYWORD2
+run	KEYWORD2
 
 
 
